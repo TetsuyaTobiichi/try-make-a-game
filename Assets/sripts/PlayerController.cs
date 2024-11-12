@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting.Dependencies.Sqlite;
 using Unity.VisualScripting.ReorderableList.Element_Adder_Menu;
 using UnityEngine;
+using UnityEngine.TextCore;
 
 public class PlayerController : MonoBehaviour
 {
@@ -11,7 +12,8 @@ public class PlayerController : MonoBehaviour
     public Animator animator;
     private Rigidbody2D _playerBody;
     private float _horizontalMove;
-    private float _deltaPlayerRay=1.25f;
+    private float _deltaPlayerRay=1f;
+    private bool _face=true;
     private Dictionary<System.Func<bool>, Player.PlayerState> stateConditions;
     void Start()
     {
@@ -25,12 +27,15 @@ public class PlayerController : MonoBehaviour
         };
     }
 
-    // Update is called once per frame
     void Update()
     {
+        //try to change
         AnimateSwitch();
         player.curentState=GetPlayerState();
+        if(IsGround()){
         _horizontalMove = Input.GetAxis("Horizontal");
+        }
+        FlipPlayer();
         if(Input.GetButtonDown("Jump") && IsGround()){
             Jump();
         }
@@ -45,9 +50,7 @@ public class PlayerController : MonoBehaviour
         
     }
     void move(){
-        if(IsGround()){
         _playerBody.velocity = new Vector2(_horizontalMove * player.moveSpeed, _playerBody.velocity.y);
-        }
         
     }
     private bool IsGround(){
@@ -67,20 +70,37 @@ public class PlayerController : MonoBehaviour
         return Player.PlayerState.Idle;
     }
 
-    private void AnimateSwitch(){
+    private void FlipPlayer()
+    {
+        if (_horizontalMove > 0 && !_face || _horizontalMove < 0 && _face)
+        {
+            Vector3 temp = player.transform.localScale;
+            temp.x*=-1;
+            player.transform.localScale=temp;
+            _face= !_face;
+            
+        }
+        
+    }
 
+    private void AnimateSwitch(){
+    //try to change
         switch(player.curentState){
             case Player.PlayerState.Idle:
                 animator.SetBool("idle",true);
+                animator.SetFloat("velocityY",0);
+                animator.SetFloat("velocityX",0);
             break;
             case Player.PlayerState.Jumping:
                 animator.SetBool("idle",false);
                 animator.SetFloat("velocityY",_playerBody.velocity.y);
             break;
             case Player.PlayerState.Falling:
-                animator.SetFloat("velocityY",_playerBody.velocity.y);
             break;
             case Player.PlayerState.Running:
+                animator.SetBool("isGround",IsGround());
+                animator.SetBool("idle",false);
+                animator.SetFloat("velocityX",_playerBody.velocity.x);
             break;
         }
     }
